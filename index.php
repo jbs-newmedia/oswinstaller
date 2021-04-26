@@ -22,7 +22,7 @@ class Installer {
 	/**
 	 * Minor-Version der Klasse.
 	 */
-	private const CLASS_MINOR_VERSION=0;
+	private const CLASS_MINOR_VERSION=1;
 
 	/**
 	 * Release-Version der Klasse.
@@ -71,12 +71,33 @@ class Installer {
 	private array $error_messages=[];
 
 	/**
-	 * Installer constructor.
+	 * @var int
 	 */
-	public function __construct() {
+	private int $chmod_dir=0;
+
+	/**
+	 * @var int
+	 */
+	private int $chmod_file=0;
+
+	/**
+	 * Installer constructor.
+	 *
+	 * @param int $chmod_dir
+	 * @param int $chmod_file
+	 */
+	public function __construct(int $chmod_dir=0, int $chmod_file=0) {
+		if ($chmod_dir==0) {
+			$chmod_dir=0755;
+		}
+		if ($chmod_file==0) {
+			$chmod_file=0644;
+		}
 		$this->installer_sha1=sha1_file(__FILE__);
 		$this->frame_path=dirname(__FILE__).DIRECTORY_SEPARATOR;
 		$this->tools_path=$this->frame_path.'oswtools'.DIRECTORY_SEPARATOR;
+		$this->chmod_dir=$chmod_dir;
+		$this->chmod_file=$chmod_file;
 	}
 
 	/**
@@ -158,8 +179,6 @@ class Installer {
 	 * @return bool
 	 */
 	public function unpackFile(string $file):bool {
-		$chmod_dir=0755;
-		$chmod_file=0644;
 		$Zip=new ZipArchive();
 		$Zip->open($file);
 		if ($Zip->numFiles>0) {
@@ -173,12 +192,12 @@ class Installer {
 					if (!is_dir($this->frame_path.$stat['name'])) {
 						mkdir($this->frame_path.$stat['name']);
 					}
-					@chmod($this->frame_path.$stat['name'], $chmod_dir);
+					@chmod($this->frame_path.$stat['name'], $this->chmod_dir);
 				} else {
 					#file
 					$data=$Zip->getFromIndex($i);
 					file_put_contents($this->frame_path.$stat['name'], $data);
-					@chmod($this->frame_path.$stat['name'], $chmod_file);
+					@chmod($this->frame_path.$stat['name'], $this->chmod_file);
 				}
 			}
 
@@ -240,7 +259,28 @@ class Installer {
 		return $file;
 	}
 
-	public function finish() {
+	/**
+	 * @return object
+	 */
+	public function writeHTAccess():object {
+		$file_ht=$this->tools_path.'.htaccess';
+		if (file_exists($file_ht)!==true) {
+			file_put_contents($file_ht, "# osWFrame .htaccess permission begin #\n\n# osWFrame .htaccess permission end #\n\n# osWFrame .htaccess block begin #\n\nRewriteEngine on\n\nRewriteRule ^tools.([a-z0-9-_]+).stable$ ?module=tools.$1.stable&%{QUERY_STRING} [L]\nRewriteRule ^tools.([a-z0-9-_]+).stable/$ ?module=tools.$1.stable&%{QUERY_STRING} [L]\nRewriteRule ^tools.([a-z0-9-_]+).stable/([a-z0-9-_]+)$ ?module=tools.$1.stable&action=$2&%{QUERY_STRING} [L]\nRewriteRule ^tools.([a-z0-9-_]+).stable/([a-z0-9-_]+)/$ ?module=tools.$1.stable&action=$2&%{QUERY_STRING} [L]\n\nRewriteRule ^([a-zA-Z0-9-_]+)/([a-zA-Z0-9-]+)?_([0-9]+)$ ?module=$1&element_id=$3&%{QUERY_STRING} [L]\nRewriteRule ^([a-zA-Z0-9-_]+)$ ?module=$1&%{QUERY_STRING} [L]\n\nErrorDocument 400 ?module=_errorlogger&error_status=400\nErrorDocument 401 ?module=_errorlogger&error_status=401\nErrorDocument 402 ?module=_errorlogger&error_status=402\nErrorDocument 403 ?module=_errorlogger&error_status=403\nErrorDocument 404 ?module=_errorlogger&error_status=404\nErrorDocument 405 ?module=_errorlogger&error_status=405\nErrorDocument 406 ?module=_errorlogger&error_status=406\nErrorDocument 407 ?module=_errorlogger&error_status=407\nErrorDocument 408 ?module=_errorlogger&error_status=408\nErrorDocument 409 ?module=_errorlogger&error_status=409\nErrorDocument 410 ?module=_errorlogger&error_status=410\nErrorDocument 411 ?module=_errorlogger&error_status=411\nErrorDocument 412 ?module=_errorlogger&error_status=412\nErrorDocument 413 ?module=_errorlogger&error_status=413\nErrorDocument 414 ?module=_errorlogger&error_status=414\nErrorDocument 415 ?module=_errorlogger&error_status=415\nErrorDocument 416 ?module=_errorlogger&error_status=416\nErrorDocument 417 ?module=_errorlogger&error_status=417\n\n# osWFrame .htaccess block end #");
+			chmod($file_ht, $this->chmod_file);
+
+			$file_pw=$this->tools_path.'.htpasswd';
+			if (file_exists($file_pw)===true) {
+				file_put_contents($file_ht, preg_replace('/# osWFrame .htaccess permission begin #(.*)# osWFrame .htaccess permission end #/Uis', '# osWFrame .htaccess permission begin #'."\n\nAuthType Basic\nAuthName \"osWTools\"\nAuthUserFile \"".\osWFrame\Core\Settings::getStringVar('settings_abspath').".htpasswd\"\nrequire valid-user\n\n".'# osWFrame .htaccess permission end #', file_get_contents($file_ht)));
+			}
+		}
+
+		return $this;
+	}
+
+	/**
+	 *
+	 */
+	public function finish():void {
 		if ($this->error_messages!==[]) {
 			echo '<strong>Installer failed:</strong><br/>';
 			echo implode('<br/>', $this->error_messages);
@@ -252,12 +292,14 @@ class Installer {
 			$this->delFile(__FILE__);
 		}
 
+		$this->writeHTAccess();
+
 		header('Location: oswtools/');
 	}
 
 }
 
-$Installer=new Installer();
+$Installer=new Installer(0755, 0644);
 $Installer->setServerList('oswframe2k20', '{"info":{"name":"osWFrame2k20","package":"tools.main"},"data":{"1":{"server_id":"1","server_name":"osWFrame Release Server #1 (hosted by jbs-newmedia.de)","server_url":"https:\/\/jbs-newmedia.de\/oswsource2k20\/index.php"},"2":{"server_id":"2","server_name":"osWFrame Release Server #2 (hosted by hetzner.de)","server_url":"https:\/\/srcmi.eu\/oswsource2k20\/index.php"},"3":{"server_id":"3","server_name":"osWFrame Release Server #3 (hosted by ionos.de)","server_url":"https:\/\/srcma.eu\/oswsource2k20\/index.php"},"4":{"server_id":"4","server_name":"osWFrame Release Server #4 (hosted by all-inkl.com)","server_url":"https:\/\/srcmc.eu\/oswsource2k20\/index.php"}}}');
 $Installer->connectServerList();
 $Installer->installPackage('tools.main', 'stable', 'oswframe2k20');
