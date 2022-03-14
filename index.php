@@ -7,7 +7,7 @@
  * @copyright Copyright (c) JBS New Media GmbH - Juergen Schwind (https://jbs-newmedia.com)
  * @package osWFrame Installer
  * @link https://oswframe.com
- * @license https://www.gnu.org/licenses/gpl-3.0.html GNU General Public License 3
+ * @license MIT License
  */
 
 date_default_timezone_set('Europe/Berlin');
@@ -27,7 +27,7 @@ class Installer {
 	/**
 	 * Release-Version der Klasse.
 	 */
-	private const CLASS_RELEASE_VERSION=0;
+	private const CLASS_RELEASE_VERSION=1;
 
 	/**
 	 * Extra-Version der Klasse.
@@ -270,7 +270,7 @@ class Installer {
 
 			$file_pw=$this->tools_path.'.htpasswd';
 			if (file_exists($file_pw)===true) {
-				file_put_contents($file_ht, preg_replace('/# osWFrame .htaccess permission begin #(.*)# osWFrame .htaccess permission end #/Uis', '# osWFrame .htaccess permission begin #'."\n\nAuthType Basic\nAuthName \"osWTools\"\nAuthUserFile \"".\osWFrame\Core\Settings::getStringVar('settings_abspath').".htpasswd\"\nrequire valid-user\n\n".'# osWFrame .htaccess permission end #', file_get_contents($file_ht)));
+				file_put_contents($file_ht, preg_replace('/# osWFrame .htaccess permission begin #(.*)# osWFrame .htaccess permission end #/Uis', '# osWFrame .htaccess permission begin #'."\n\nAuthType Basic\nAuthName \"osWTools\"\nAuthUserFile \"".$this->tools_path.".htpasswd\"\nrequire valid-user\n\n".'# osWFrame .htaccess permission end #', file_get_contents($file_ht)));
 			}
 		}
 
@@ -300,7 +300,7 @@ class Installer {
 }
 
 $Installer=new Installer(0755, 0644);
-$Installer->setServerList('oswframe2k20', '{"info":{"name":"osWFrame2k20","package":"tools.main"},"data":{"1":{"server_id":"1","server_name":"osWFrame Release Server #1 (hosted by jbs-newmedia.de)","server_url":"https:\/\/jbs-newmedia.de\/oswsource2k20\/index.php"},"2":{"server_id":"2","server_name":"osWFrame Release Server #2 (hosted by hetzner.de)","server_url":"https:\/\/srcmi.eu\/oswsource2k20\/index.php"},"3":{"server_id":"3","server_name":"osWFrame Release Server #3 (hosted by ionos.de)","server_url":"https:\/\/srcma.eu\/oswsource2k20\/index.php"},"4":{"server_id":"4","server_name":"osWFrame Release Server #4 (hosted by all-inkl.com)","server_url":"https:\/\/srcmc.eu\/oswsource2k20\/index.php"}}}');
+$Installer->setServerList('oswframe2k20', '#$__SERVERLIST__$#');
 $Installer->connectServerList();
 $Installer->installPackage('tools.main', 'stable', 'oswframe2k20');
 $Installer->installPackage('tools.toolmanager', 'stable', 'oswframe2k20');
