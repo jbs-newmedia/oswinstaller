@@ -518,6 +518,12 @@ if ($checker->checkEnvironment()!==true) {
 	$Installer->connectServerList();
 	$Installer->installPackage('tools.main', 'stable', 'oswframe2k20');
 	$Installer->installPackage('tools.toolmanager', 'stable', 'oswframe2k20');
+
+	$InstallerVendor=new Installer(0755, 0644);
+	$InstallerVendor->setServerList('vendor', '{"info":{"name":"osWFrame.Vendor","package":"vendortools.serverlist"},"data":{"1":{"server_id":1,"server_name":"osWFrame Release Server Vendor #1 (hosted by jbs-newmedia.de)","server_url":"https:\/\/jbs-newmedia.de\/vendor\/index.php"},"2":{"server_id":2,"server_name":"osWFrame Release Server Vendor #2 (hosted by hetzner.de)","server_url":"https:\/\/srcmi.eu\/vendor\/index.php"},"3":{"server_id":3,"server_name":"osWFrame Release Server Vendor #3 (hosted by ionos.de)","server_url":"https:\/\/srcma.eu\/vendor\/index.php"},"4":{"server_id":4,"server_name":"osWFrame Release Server Vendor #4 (hosted by all-inkl.com)","server_url":"https:\/\/srcmc.eu\/vendor\/index.php"}}}');
+	$InstallerVendor->connectServerList();
+	$InstallerVendor->installPackage('vendortools.serverlist', 'stable', 'vendor');
+
 	$Installer->finish();
 }
 
